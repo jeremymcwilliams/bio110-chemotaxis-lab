@@ -1,19 +1,76 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Chemotaxis trial 3 bar graph"
+output:
+word_document: default
+html_document:
+df_print: paged
+pdf_document: default
 ---
+Chemotaxis Trial 3 - 12/12/19
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+## Testing 4 strains for chemotaxis to 1% Isoamyl alcohol
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+### Strains tested:
+N2
+JT204 daf-12
+JT6924 daf-19; daf-12
+CB1124 che-3
 
+### Also testing the use of 0.01% Triton X-100 in S-Basal to decrease worms sticking inside pipet tips.  And used H20 to dilute Isoamyl alcohol and 0.5M Sodium azide instead of EtOH.
 ```{r}
-plot(cars)
+library(tidyverse)
+
+```
+### Load the dataset.  Data should be arranged in columns with simple one word title at the top of the column.  Upload in lower right window.  Import dataset in upper right window. Then read into R Notebook.
+```{r}
+chem3<-read_csv("chem3.csv")
+chem3
+```
+### Calculate means for the different strains.
+```{r}
+CI<-as_tibble(chem3)
+
+CI
+```
+```{r}
+meanCI<-CI %>% group_by(strain) %>% summarise(avg=mean(CI))
+
+meanCI
+```
+### Now make a barplot using ggplot
+```{r}
+ggplot(data=meanCI, mapping=aes(x=strain, y=avg))+geom_bar(stat="identity")
+```
+# Improve the bargraph with title and labels and pick a theme
+```{r}
+ggplot(data=meanCI, mapping=aes(x=strain, y=avg))+geom_bar(stat="identity")+labs(title="Chemotaxis index of C. elegans strains to 1% Isoamyl alcohol after 1 hour", x="C elegans strain", y="Chemotaxis Index", fill = "Strain") + theme_minimal()
+```
+### Calculate the statistics for data
+```{r}
+library(dplyr)
+
+chem3_summary<- chem3 %>% # the names of the new data frame and the data frame to be summarised
+group_by(strain) %>%   # the grouping variable
+summarise(mean_CI = mean(CI),  # calculates the mean of each group
+sd_CI = sd(CI), # calculates the standard deviation of each group
+n_CI = n(),  # calculates the sample size per group
+SE_CI = sd(CI)/sqrt(n())) # calculates the standard error of each group
+chem3_summary
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+### Plot a bar graph with SEM used for error bars
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+```{r}
+CIPlot <- ggplot(chem3_summary, aes(strain, mean_CI)) +
+geom_col() +
+geom_errorbar(aes(ymin = mean_CI - SE_CI, ymax = mean_CI + SE_CI), width=0.2)
 
+CIPlot + labs(title="Chemotaxis index of C. elegans strains to 1% Isoamyl alcohol after 1 hour",y="Chemotaxis Index (SEM)", x = "Strain") + theme_minimal()
+```
+### Save the plot
+```{r}
+ggsave("plot.png", height=5, width=8)
+
+
+```
